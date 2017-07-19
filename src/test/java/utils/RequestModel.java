@@ -93,7 +93,7 @@ public class RequestModel {
     }
 
     public String getAmount() {
-        return String.format("%.2f", amount);
+        return amount;
     }
 
     public void setAmount(double amount) {

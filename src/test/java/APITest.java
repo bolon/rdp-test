@@ -28,6 +28,9 @@ public class APITest {
         RestAssured.useRelaxedHTTPSValidation();
     }
 
+    /**
+     * Make sure the length of signature is 128.
+     */
     @Test
     public void test1SigLengthValid() {
         int expectedLength = 128;
@@ -35,6 +38,9 @@ public class APITest {
         assertEquals("Expected length of HASH512 = 128", expectedLength, rm.getSignature().length());
     }
 
+    /**
+     * Test call to payment-api with valid request is success by checking the response code.
+     */
     @Test
     public void test2CallSuccess() {
         int respCodeSuccess = 0;
@@ -48,12 +54,34 @@ public class APITest {
         Assert.assertEquals(responseModel.getRespCode(), respCodeSuccess);
     }
 
+    /**
+     * Test call to payment-api with invalid request is failed by checking the response code.
+     */
     @Test
     public void test3CallFailedSignature() {
         int respCodeInvalidSig = -1003;
 
         RequestModel newReq = rm;
         newReq.setAmount(200);
+
+        ResponseModel responseModel = given().contentType("application/json").
+                body(newReq).
+                when().
+                post("/payment-api").
+                as(ResponseModel.class);
+
+        Assert.assertEquals(responseModel.getRespCode(), respCodeInvalidSig);
+    }
+
+    /**
+     * Test call to payment-api with invalid request is failed by checking the response code.
+     */
+    @Test
+    public void test4CallFailedSignature() {
+        int respCodeInvalidSig = -1014;
+
+        RequestModel newReq = rm;
+        newReq.setSignature(rm.getSignature() + "x");
 
         ResponseModel responseModel = given().contentType("application/json").
                 body(newReq).
