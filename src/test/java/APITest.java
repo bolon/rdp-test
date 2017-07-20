@@ -4,9 +4,11 @@ import org.junit.Before;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
-import utils.RequestModel;
-import utils.ResponseModel;
+import utils.RequestWrapper;
+import utils.ResponseWrapper;
 import utils.TestUtils;
+
+import java.util.SortedMap;
 
 import static io.restassured.RestAssured.given;
 import static org.junit.Assert.assertEquals;
@@ -19,7 +21,7 @@ import static org.junit.Assert.assertEquals;
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class APITest {
     private static final String BASE_URL_KEY_PROPERTY = "api_endpoint";
-    private RequestModel rm;
+    private RequestWrapper rm;
 
     @Before
     public void start() {
@@ -45,13 +47,13 @@ public class APITest {
     public void test2CallSuccess() {
         int respCodeSuccess = 0;
 
-        ResponseModel responseModel = given().contentType("application/json").
+        ResponseWrapper responseWrapper = given().contentType("application/json").
                 body(rm).
                 when().
                 post("/payment-api").
-                as(ResponseModel.class);
+                as(ResponseWrapper.class);
 
-        Assert.assertEquals(responseModel.getRespCode(), respCodeSuccess);
+        Assert.assertEquals(responseWrapper.getRespCode(), respCodeSuccess);
     }
 
     /**
@@ -61,16 +63,16 @@ public class APITest {
     public void test3CallFailedSignature() {
         int respCodeInvalidSig = -1003;
 
-        RequestModel newReq = rm;
+        RequestWrapper newReq = rm;
         newReq.setAmount(200);
 
-        ResponseModel responseModel = given().contentType("application/json").
+        ResponseWrapper responseWrapper = given().contentType("application/json").
                 body(newReq).
                 when().
                 post("/payment-api").
-                as(ResponseModel.class);
+                as(ResponseWrapper.class);
 
-        Assert.assertEquals(responseModel.getRespCode(), respCodeInvalidSig);
+        Assert.assertEquals(responseWrapper.getRespCode(), respCodeInvalidSig);
     }
 
     /**
@@ -80,15 +82,33 @@ public class APITest {
     public void test4CallFailedSignature() {
         int respCodeInvalidSig = -1014;
 
-        RequestModel newReq = rm;
+        RequestWrapper newReq = rm;
         newReq.setSignature(rm.getSignature() + "x");
 
-        ResponseModel responseModel = given().contentType("application/json").
+        ResponseWrapper responseWrapper = given().contentType("application/json").
                 body(newReq).
                 when().
                 post("/payment-api").
-                as(ResponseModel.class);
+                as(ResponseWrapper.class);
 
-        Assert.assertEquals(responseModel.getRespCode(), respCodeInvalidSig);
+        Assert.assertEquals(responseWrapper.getRespCode(), respCodeInvalidSig);
+    }
+
+    @Test
+    public void test5AuthenticateResponseSig() {
+        String resp = given().contentType("application/json").
+                body(rm).
+                when().
+                post("/payment-api").
+                asString();
+
+
+        SortedMap s = TestUtils.putRespInSortedMap(resp);
+        String sigActual = String.valueOf(s.get("signature"));
+
+        String aggregatedStr = TestUtils.getAggregatedField(s);
+        String sigToCheck = TestUtils.getSignature(aggregatedStr);
+
+        Assert.assertEquals(sigActual, sigToCheck);
     }
 }

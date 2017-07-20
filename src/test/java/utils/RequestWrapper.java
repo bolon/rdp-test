@@ -5,8 +5,8 @@ import com.google.gson.annotations.SerializedName;
 /**
  * Complete the docs.
  */
-public class RequestModel {
-    public RequestModel(String redirectUrl, String notifyUrl, String backUrl, String mid, String orderId, double amount, String ccy, String apiMode, String paymentType, String merchantReference) {
+public class RequestWrapper {
+    public RequestWrapper(String redirectUrl, String notifyUrl, String backUrl, String mid, String orderId, double amount, String ccy, String apiMode, String paymentType, String merchantReference) {
         this.redirectUrl = redirectUrl;
         this.notifyUrl = notifyUrl;
         this.backUrl = backUrl;

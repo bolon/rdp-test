@@ -6,7 +6,7 @@ import com.google.gson.annotations.SerializedName;
  * Complete the docs.
  */
 
-public class ResponseModel {
+public class ResponseWrapper {
     @SerializedName("created_timestamp")
     private long timeCreated;
 

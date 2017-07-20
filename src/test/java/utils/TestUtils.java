@@ -1,16 +1,19 @@
 package utils;
 
+import com.google.gson.Gson;
 import org.apache.commons.codec.digest.DigestUtils;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.util.Properties;
+import java.util.SortedMap;
 
 /**
  * Complete the docs.
  */
 public class TestUtils {
-    public static RequestModel generateValidRequest() {
+    public static RequestWrapper generateValidRequest() {
         String redirectUrl = "http://www.google.com";
         String notifyUrl = "https://en.wikipedia.org/wiki";
         String backUrl = "https://json.org";
@@ -24,12 +27,18 @@ public class TestUtils {
 
         String sig = getSignature(mid, orderId, paymentType, String.format("%.2f", amount), ccy);
 
-        RequestModel requestModel = new RequestModel(redirectUrl, notifyUrl, backUrl, mid, orderId, amount, ccy, apiMode, paymentType, mercRef);
-        requestModel.setSignature(sig);
+        RequestWrapper requestWrapper = new RequestWrapper(redirectUrl, notifyUrl, backUrl, mid, orderId, amount, ccy, apiMode, paymentType, mercRef);
+        requestWrapper.setSignature(sig);
 
-        return requestModel;
+        return requestWrapper;
     }
 
+    /**
+     * Get signature of response or request
+     *
+     * @param param String in order : mid, orderId/transactionId, paymentType, amount, ccy
+     * @return After digest the aggregated String into Hash512 get the hex.
+     */
     public static String getSignature(String... param) {
         String aggregatedField = "";
 
@@ -54,11 +63,64 @@ public class TestUtils {
         }
     }
 
-    static String getSHA512String(String stringToHash) {
+    private static String getSHA512String(String stringToHash) {
         String generatedPassword;
 
         generatedPassword = DigestUtils.sha512Hex(stringToHash);
 
         return generatedPassword;
     }
+
+    public static SortedMap putRespInSortedMap(String resp) {
+        SortedMap sortedMap;
+        Gson gson = new Gson();
+
+        sortedMap = gson.fromJson(resp, SortedMap.class);
+
+        for (Object s : sortedMap.keySet()) {
+            if (sortedMap.get(s) instanceof Number) {
+                sortedMap.put(s, ((Number) sortedMap.get(s)).longValue());
+            }
+        }
+
+        return sortedMap;
+    }
+
+    /**
+     * Get Aggregated string from sorted map by key for generic sign purpose
+     * @param s Sorted map by key
+     * @return aggregated string without 'signature' field. See the api docs.
+     */
+    public static String getAggregatedField(SortedMap s) {
+        s.remove("signature");
+        String aggregatedStr = "";
+
+        for (Object key : s.keySet()) {
+            aggregatedStr += TestUtils.getStringObj(s.get(key));
+        }
+
+        return aggregatedStr;
+    }
+
+    private static String getStringObj(Object obj) {
+        if (obj instanceof Array) {
+            String arrString = "";
+            for (Object o : (Object[]) obj) {
+                arrString += getStringObj(o);
+            }
+
+            return arrString;
+        }
+
+        return String.valueOf(obj);
+    }
+
+    /*private static String getArrayString(Object[] obj) {
+        String arrString = "";
+        for (Object o : obj) {
+            arrString += String.valueOf(o);
+        }
+
+        return arrString;
+    }*/
 }
