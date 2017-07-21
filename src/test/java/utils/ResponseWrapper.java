@@ -8,10 +8,10 @@ import com.google.gson.annotations.SerializedName;
 
 public class ResponseWrapper {
     @SerializedName("created_timestamp")
-    private long timeCreated;
+    private String timeCreated;
 
     @SerializedName("expired_timestamp")
-    private long timeExpired;
+    private String timeExpired;
 
     @SerializedName("mid")
     private String mid;
@@ -34,19 +34,19 @@ public class ResponseWrapper {
     @SerializedName("signature")
     private String signature;
 
-    public long getTimeCreated() {
+    public String getTimeCreated() {
         return timeCreated;
     }
 
-    public void setTimeCreated(long timeCreated) {
+    public void setTimeCreated(String timeCreated) {
         this.timeCreated = timeCreated;
     }
 
-    public long getTimeExpired() {
+    public String getTimeExpired() {
         return timeExpired;
     }
 
-    public void setTimeExpired(long timeExpired) {
+    public void setTimeExpired(String timeExpired) {
         this.timeExpired = timeExpired;
     }
 

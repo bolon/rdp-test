@@ -10,14 +10,13 @@ import org.openqa.selenium.remote.DesiredCapabilities;
 import org.openqa.selenium.remote.RemoteWebDriver;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
-import utils.RequestWrapper;
-import utils.ResponseWrapper;
-import utils.TestUtils;
+import utils.*;
 
 import java.util.List;
+import java.util.SortedMap;
 
 import static io.restassured.RestAssured.given;
-import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.core.IsEqual.equalTo;
 
 /**
  * Complete the docs.
@@ -289,6 +288,8 @@ public class UITest {
 
         btnPay.click();
 
+        wait.until(ExpectedConditions.urlContains(requestWrapper.getRedirectUrl()));
+
         //check the notification by accessing dummy web-handler
         String expectedMsg = "successful";
         int respCodeFailed = 0;
@@ -301,5 +302,104 @@ public class UITest {
                 body("response_value.response_msg", equalTo(expectedMsg)).
                 and().
                 body("response_value.response_code", equalTo(String.valueOf(respCodeFailed)));
+    }
+
+    /**
+     * Check if rdp-server is the sender of response payment
+     */
+    @Test
+    public void test8PaymentResultVerify() {
+        String nameOnCard = "Fernando";
+        String testCardNumber = "4111 1111 1111 1111";
+        String emailAddrs = "simbolon012@gmail.com";
+        int month = 12;
+        int year = 2018;
+        int cvv = 123;
+
+        ResponseWrapper respPaymentWrapper = given().contentType("application/json").
+                body(requestWrapper).
+                when().
+                post("/payment-api").
+                as(ResponseWrapper.class);
+
+        driver.get(respPaymentWrapper.getPaymentUrl());
+        wait.until(ExpectedConditions.titleContains("RedDotPayment"));
+
+        String idFormCardName = "card-name";
+        String idFormCardMonth = "exp-month";
+        String idFormCardYear = "exp-year";
+        String idFormEmail = "cc-mail";
+        String idFormCardNumber = "cc-no";
+        String idFormCCV = "cc-ccv";
+        String payBtnMatcher = "button[class='btn btn-success']";
+
+        WebElement formCardName = driver.findElementById(idFormCardName);
+        WebElement formCardExpMonth = driver.findElementById(idFormCardMonth);
+        WebElement formCardExpYear = driver.findElementById(idFormCardYear);
+        WebElement formEmail = driver.findElementById(idFormEmail);
+        WebElement formCardNumber = driver.findElementById(idFormCardNumber);
+        WebElement formCardCCV = driver.findElementById(idFormCCV);
+        WebElement btnPay = driver.findElement(By.cssSelector(payBtnMatcher));
+
+        formCardName.click();
+        formCardName.sendKeys(nameOnCard);
+
+        formCardExpMonth.click();
+        formCardExpMonth.sendKeys(String.valueOf(month));
+
+        formCardExpYear.click();
+        formCardExpYear.sendKeys(String.valueOf(year));
+
+        formCardNumber.click();
+        formCardNumber.sendKeys(String.valueOf(testCardNumber));
+
+        formCardCCV.click();
+        formCardCCV.sendKeys(String.valueOf(cvv));
+
+        formEmail.click();
+        formEmail.sendKeys(emailAddrs);
+
+        btnPay.click();
+
+        //wait until redirect
+        wait.until(ExpectedConditions.urlContains(requestWrapper.getRedirectUrl()));
+
+        //after redirect
+        String currentUrl = driver.getCurrentUrl();
+        String transId = currentUrl.substring(currentUrl.indexOf('=') + 1);
+
+        Assert.assertNotNull(transId);
+        Assert.assertTrue(transId.contains(respPaymentWrapper.getOrderId()));
+
+        RedirectRequestWrapper rqWrapperRedirect = new RedirectRequestWrapper();
+        rqWrapperRedirect.setRequestMid(respPaymentWrapper.getMid());
+        rqWrapperRedirect.setTransactionId(transId);
+
+        String aggregatedStr = rqWrapperRedirect.getRequestMid() + rqWrapperRedirect.getTransactionId();
+
+        rqWrapperRedirect.setSignature(TestUtils.getSignature(aggregatedStr));
+
+        //check the resp if its from RDP server
+        String redirectRespStr = given().contentType("application/json").
+                body(rqWrapperRedirect).
+                baseUri(TestUtils.getProperty("api_redirect_endpoint")).
+                when().
+                post().
+                asString();
+
+        ResponseRedirectionWrapper redirectResp = given().contentType("application/json").
+                body(rqWrapperRedirect).
+                baseUri(TestUtils.getProperty("api_redirect_endpoint")).
+                when().
+                post().
+                as(ResponseRedirectionWrapper.class);
+
+        SortedMap s = TestUtils.putRespInSortedMap(redirectRespStr);
+
+        aggregatedStr = TestUtils.getAggregatedField(s);
+        String sigGenerated = TestUtils.getSignature(aggregatedStr);
+        String sigToCheck = redirectResp.getSignature();
+
+        Assert.assertEquals(sigGenerated, sigToCheck);
     }
 }
