@@ -94,6 +94,9 @@ public class APITest {
         Assert.assertEquals(responseWrapper.getRespCode(), respCodeInvalidSig);
     }
 
+    /**
+     * Check if the signature from response is valid by using Generic-sign method
+     */
     @Test
     public void test5AuthenticateResponseSig() {
         String resp = given().contentType("application/json").

@@ -17,6 +17,7 @@ import utils.TestUtils;
 import java.util.List;
 
 import static io.restassured.RestAssured.given;
+import static org.hamcrest.Matchers.equalTo;
 
 /**
  * Complete the docs.
@@ -64,6 +65,7 @@ public class UITest {
         wait.until(ExpectedConditions.titleContains("RedDotPayment"));
 
         Assert.assertTrue(driver.getPageSource().contains("Transaction Details"));
+        Assert.assertEquals(responseWrapper.getPaymentUrl(), driver.getCurrentUrl());
     }
 
     /**
@@ -135,7 +137,7 @@ public class UITest {
         String amount = amountElement.get(0).getAttribute("textContent").trim().replace(",", "");
         String ccy = amountElement.get(1).getAttribute("textContent").trim();
 
-        Assert.assertEquals(requestWrapper.getAmount(), amount);    //todo : check
+        Assert.assertEquals(requestWrapper.getAmount(), amount);
         Assert.assertEquals(requestWrapper.getCcy(), ccy);
         Assert.assertEquals(requestWrapper.getOrderId(), orderId);
         Assert.assertEquals(requestWrapper.getMerchantReference(), merchant);
@@ -161,5 +163,143 @@ public class UITest {
 
         String errorMsg = "Please enter at least 3 characters.";
         Assert.assertEquals(errorMsg, driver.findElementByCssSelector(errorMsgMatcher).getAttribute("textContent").trim());
+    }
+
+    @Test
+    public void test6PaymentFailed() {
+        String nameOnCard = "Fernando";
+        String testCardNumber = "4111 1111 1111 1110";
+        String emailAddrs = "simbolon012@gmail.com";
+        int month = 12;
+        int year = 2018;
+        int cvv = 123;
+
+        ResponseWrapper responseWrapper = given().contentType("application/json").
+                body(requestWrapper).
+                when().
+                post("/payment-api").
+                as(ResponseWrapper.class);
+
+        driver.get(responseWrapper.getPaymentUrl());
+        wait.until(ExpectedConditions.titleContains("RedDotPayment"));
+
+        String idFormCardName = "card-name";
+        String idFormCardMonth = "exp-month";
+        String idFormCardYear = "exp-year";
+        String idFormEmail = "cc-mail";
+        String idFormCardNumber = "cc-no";
+        String idFormCCV = "cc-ccv";
+        String payBtnMatcher = "button[class='btn btn-success']";
+
+        WebElement formCardName = driver.findElementById(idFormCardName);
+        WebElement formCardExpMonth = driver.findElementById(idFormCardMonth);
+        WebElement formCardExpYear = driver.findElementById(idFormCardYear);
+        WebElement formEmail = driver.findElementById(idFormEmail);
+        WebElement formCardNumber = driver.findElementById(idFormCardNumber);
+        WebElement formCardCCV = driver.findElementById(idFormCCV);
+        WebElement btnPay = driver.findElement(By.cssSelector(payBtnMatcher));
+
+        formCardName.click();
+        formCardName.sendKeys(nameOnCard);
+
+        formCardExpMonth.click();
+        formCardExpMonth.sendKeys(String.valueOf(month));
+
+        formCardExpYear.click();
+        formCardExpYear.sendKeys(String.valueOf(year));
+
+        formCardNumber.click();
+        formCardNumber.sendKeys(String.valueOf(testCardNumber));
+
+        formCardCCV.click();
+        formCardCCV.sendKeys(String.valueOf(cvv));
+
+        formEmail.click();
+        formEmail.sendKeys(emailAddrs);
+
+        btnPay.click();
+
+        wait.until(ExpectedConditions.urlContains(requestWrapper.getRedirectUrl()));
+
+        //check the notification by accessing notification-handler
+        String expectedMsg = "failed";
+        int respCodeFailed = -1;
+
+        given().
+                baseUri(TestUtils.getProperty("get_notif_endpoint")).
+                when().get().
+                then().assertThat().
+                statusCode(200).
+                body("response_value.response_msg", equalTo(expectedMsg)).
+                and().
+                body("response_value.response_code", equalTo(String.valueOf(respCodeFailed)));
+    }
+
+    @Test
+    public void test7PaymentSuccess() {
+        String nameOnCard = "Fernando";
+        String testCardNumber = "4111 1111 1111 1111";
+        String emailAddrs = "simbolon012@gmail.com";
+        int month = 12;
+        int year = 2018;
+        int cvv = 123;
+
+        ResponseWrapper responseWrapper = given().contentType("application/json").
+                body(requestWrapper).
+                when().
+                post("/payment-api").
+                as(ResponseWrapper.class);
+
+        driver.get(responseWrapper.getPaymentUrl());
+        wait.until(ExpectedConditions.titleContains("RedDotPayment"));
+
+        String idFormCardName = "card-name";
+        String idFormCardMonth = "exp-month";
+        String idFormCardYear = "exp-year";
+        String idFormEmail = "cc-mail";
+        String idFormCardNumber = "cc-no";
+        String idFormCCV = "cc-ccv";
+        String payBtnMatcher = "button[class='btn btn-success']";
+
+        WebElement formCardName = driver.findElementById(idFormCardName);
+        WebElement formCardExpMonth = driver.findElementById(idFormCardMonth);
+        WebElement formCardExpYear = driver.findElementById(idFormCardYear);
+        WebElement formEmail = driver.findElementById(idFormEmail);
+        WebElement formCardNumber = driver.findElementById(idFormCardNumber);
+        WebElement formCardCCV = driver.findElementById(idFormCCV);
+        WebElement btnPay = driver.findElement(By.cssSelector(payBtnMatcher));
+
+        formCardName.click();
+        formCardName.sendKeys(nameOnCard);
+
+        formCardExpMonth.click();
+        formCardExpMonth.sendKeys(String.valueOf(month));
+
+        formCardExpYear.click();
+        formCardExpYear.sendKeys(String.valueOf(year));
+
+        formCardNumber.click();
+        formCardNumber.sendKeys(String.valueOf(testCardNumber));
+
+        formCardCCV.click();
+        formCardCCV.sendKeys(String.valueOf(cvv));
+
+        formEmail.click();
+        formEmail.sendKeys(emailAddrs);
+
+        btnPay.click();
+
+        //check the notification by accessing dummy web-handler
+        String expectedMsg = "successful";
+        int respCodeFailed = 0;
+
+        given().
+                baseUri(TestUtils.getProperty("get_notif_endpoint")).
+                when().get().
+                then().assertThat().
+                statusCode(200).
+                body("response_value.response_msg", equalTo(expectedMsg)).
+                and().
+                body("response_value.response_code", equalTo(String.valueOf(respCodeFailed)));
     }
 }

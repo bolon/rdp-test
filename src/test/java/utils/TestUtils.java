@@ -14,8 +14,8 @@ import java.util.SortedMap;
  */
 public class TestUtils {
     public static RequestWrapper generateValidRequest() {
-        String redirectUrl = "http://www.google.com";
-        String notifyUrl = "https://en.wikipedia.org/wiki";
+        String redirectUrl = "https://secure-hollows-99342.herokuapp.com";
+        String notifyUrl = "https://secure-hollows-99342.herokuapp.com/notif-handler-v2";
         String backUrl = "https://json.org";
         String mid = getProperty("mid");
         String orderId = "OR123";
@@ -114,13 +114,4 @@ public class TestUtils {
 
         return String.valueOf(obj);
     }
-
-    /*private static String getArrayString(Object[] obj) {
-        String arrString = "";
-        for (Object o : obj) {
-            arrString += String.valueOf(o);
-        }
-
-        return arrString;
-    }*/
 }
