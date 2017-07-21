@@ -10,7 +10,7 @@ mid : [mid from rdp]
 secret_key : [secret key for signing purpose from rdp]
 ```
 * Make sure you have notification handler up and running to handle notification post-payment (UITest). In this case I use [simple web-services](https://secure-hollows-99342.herokuapp.com/) using Lumen
-hosted on Heroku. Github link (<stubb!!!>)
+hosted on Heroku. Github link [here](https://github.com/bolon/rdp-notif-handler)
 
 * Make sure you have [Chromedriver](https://sites.google.com/a/chromium.org/chromedriver/) installed in your local machine
 
